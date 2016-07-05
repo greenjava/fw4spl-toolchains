@@ -113,7 +113,7 @@ set(ANDROID_NDK ${ANDROID_NDK_PATH})
 # Find ndk-depends
 find_host_program(NDK_DEPENDS
     NAMES ndk-depends
-    PATHS ${ANDROID_NDK_PATH}
+    PATHS ${ANDROID_NDK_PATH} "${ANDROID_NDK_PATH}/prebuilt/windows-x86_64/bin"
     DOC   "The ndk-depends command-line tool"
 )
 if(NOT NDK_DEPENDS)

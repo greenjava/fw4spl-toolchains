@@ -1,24 +1,23 @@
-# Android CMake toolchain file for Android NDK r11c and arch armv7-a
+# Android CMake Clang toolchain file for Android NDK r12b and arch armv7-a
 
+########################################
+# NDK 12b download link:
+# Windows 32-bit:     http://dl.google.com/android/repository/android-ndk-r12b-windows-x86.zip
+# Windows 64-bit:     http://dl.google.com/android/repository/android-ndk-r12b-windows-x86_64.zip
+# Mac OS X:           http://dl.google.com/android/repository/android-ndk-r12b-darwin-x86_64.zip
+# Linux 64-bit (x86): http://dl.google.com/android/repository/android-ndk-r12b-linux-x86_64.zip
+
+########################################
 # This toolchain required an Android standalone toolchain, 
 # you can generate this toolchain with the command:
 # <NDK_DIR>/build/tools/make-standalone-toolchain.sh --use-llvm --stl=libcxx --ndk-dir=<NDK_DIR> --toolchain=arm-linux-androideabi-clang --platform=android-21 --arch=arm --install-dir=<INSTALL_DIR>
 
+########################################
 # Required env var:
-# - ANDROID_STANDALONE_TOOLCHAIN: path to the standalone Android toolchain
 # - ANDROID_SDK: path to the Android SDK
 # - ANDROID_NDK: path to the Android NDK
 
 include(${CMAKE_CURRENT_LIST_DIR}/utils/android.utils.cmake)
-
-########################################
-# Find standalone Android toolchain
-if(DEFINED ENV{ANDROID_STANDALONE_TOOLCHAIN})
-    set(ANDROID_STANDALONE_TOOLCHAIN_PATH "$ENV{ANDROID_STANDALONE_TOOLCHAIN}" CACHE PATH "Path to the standalone Android toolchain")
-else()
-    message(FATAL_ERROR "Can not find standalone Android toolchain path, please set the path in env var 'ANDROID_STANDALONE_TOOLCHAIN'")
-endif()
-file(TO_CMAKE_PATH "${ANDROID_STANDALONE_TOOLCHAIN_PATH}" ANDROID_STANDALONE_TOOLCHAIN_PATH)
 
 ########################################
 set(CMAKE_SYSTEM_NAME Android)
@@ -30,21 +29,36 @@ set(CMAKE_SYSTEM_PROCESSOR "armv7-a")
 
 set(CMAKE_CROSSCOMPILING TRUE)
 
-set(ANDROID_NDK_VERSION "r11c" CACHE STRING "Android NDK version")
-set(ANDROID_ARCH "armeabi-v7a" CACHE STRING "Android target architecture")
-set(ANDROID_API_LEVEL "19" CACHE STRING "Android SDK API version")
-set(ANDROID_NATIVE_API_LEVEL "21" CACHE STRING "Android NDK API version")
-set(ANDROID_STL_TYPE "c++_shared" CACHE STRING "Android C++ runtime library")
+set(ANDROID_NDK_VERSION      "r12b"        CACHE STRING "Android NDK version")
+set(ANDROID_ARCH             "armeabi-v7a" CACHE STRING "Android target architecture")
+set(ANDROID_API_LEVEL        "19"          CACHE STRING "Android SDK API version")
+set(ANDROID_NATIVE_API_LEVEL "21"          CACHE STRING "Android NDK API version")
+set(ANDROID_STL              "c++_shared"  CACHE STRING "Android C++ runtime library")
 
+
+########################################
+# Install standalone Android toolchain
+set(ANDROID_STANDALONE_TOOLCHAIN_PATH "${CMAKE_BINARY_DIR}/android_toolchain-${ANDROID_NDK_VERSION}")
+if(NOT EXISTS ${ANDROID_STANDALONE_TOOLCHAIN_PATH})
+    set(TOOLCHAIN_ARGS "${ANDROID_NDK_PATH}/build/tools/make_standalone_toolchain.py" 
+                       --api "${ANDROID_NATIVE_API_LEVEL}"
+                       --stl "libc++" 
+                       --arch "arm" 
+                       --install-dir "${ANDROID_STANDALONE_TOOLCHAIN_PATH}")
+    execute_process(COMMAND python ${TOOLCHAIN_ARGS}
+                    WORKING_DIRECTORY "${ANDROID_NDK_PATH}/build/tools")
+endif()
+
+########################################
 # for compatibility with taka-no-me toolchain
 set(ANDROID_ABI ${ANDROID_ARCH})
 set(ARM_TARGET ${ANDROID_ARCH})
-set(ANDROID_COMPILER_VERSION 3.8)
+set(ANDROID_COMPILER_VERSION 4.9)
 
 ########################################
 # setup the cross-compiler
-set(CMAKE_C_COMPILER   "${ANDROID_STANDALONE_TOOLCHAIN_PATH}/bin/clang38${TOOL_OS_SUFFIX}"     CACHE FILEPATH "C compiler")
-set(CMAKE_CXX_COMPILER "${ANDROID_STANDALONE_TOOLCHAIN_PATH}/bin/clang38++${TOOL_OS_SUFFIX}"   CACHE FILEPATH "C++ compiler")
+set(CMAKE_C_COMPILER   "${ANDROID_STANDALONE_TOOLCHAIN_PATH}/bin/clang38${TOOL_OS_SUFFIX}"                       CACHE FILEPATH "C compiler")
+set(CMAKE_CXX_COMPILER "${ANDROID_STANDALONE_TOOLCHAIN_PATH}/bin/clang38++${TOOL_OS_SUFFIX}"                     CACHE FILEPATH "C++ compiler")
 set(CMAKE_ASM_COMPILER "${ANDROID_STANDALONE_TOOLCHAIN_PATH}/arm-linux-androideabi/bin/as${TOOL_OS_SUFFIX}"      CACHE FILEPATH "assembler")
 set(CMAKE_STRIP        "${ANDROID_STANDALONE_TOOLCHAIN_PATH}/arm-linux-androideabi/bin/strip${TOOL_OS_SUFFIX}"   CACHE FILEPATH "strip")
 set(CMAKE_AR           "${ANDROID_STANDALONE_TOOLCHAIN_PATH}/arm-linux-androideabi/bin/ar${TOOL_OS_SUFFIX}"      CACHE FILEPATH "archive")
@@ -101,23 +115,23 @@ set(CMAKE_CXX_LINK_EXECUTABLE       "${CMAKE_CXX_LINK_EXECUTABLE} ${ANDROID_LIB_
 
 ########################################
 # cache flags
-set(ANDROID_CXX_FLAGS "-march=armv7-a -mfloat-abi=softfp -fsigned-char -fpic -funwind-tables -target armv7-none-linux-androideabi --sysroot=${ANDROID_SYSROOT} -Xclang -mnoexecstack -Qunused-arguments -frtti -fexceptions"
-                      CACHE INTERNAL "Android specific c/c++ flags" )
+set(ANDROID_CXX_FLAGS "-march=armv7-a -mfloat-abi=softfp -fsigned-char -fpic -funwind-tables -target armv7-none-linux-androideabi --sysroot=${ANDROID_SYSROOT} -Xclang -mnoexecstack -Qunused-arguments -frtti -fexceptions -fdata-sections -ffunction-sections"
+                            CACHE INTERNAL "Android specific c/c++ flags" )
 set(ANDROID_CXX_FLAGS_RELEASE "-mthumb -fomit-frame-pointer -fno-strict-aliasing -target armv7-none-linux-androideabi"
-                      CACHE INTERNAL "Android specific c/c++ Release flags" )
+                            CACHE INTERNAL "Android specific c/c++ Release flags" )
 set(ANDROID_CXX_FLAGS_DEBUG "-marm -fno-omit-frame-pointer -fno-strict-aliasing -target armv7-none-linux-androideabi"
-                      CACHE INTERNAL "Android specific c/c++ Debug flags" )
+                            CACHE INTERNAL "Android specific c/c++ Debug flags" )
 set(ANDROID_LINKER_FLAGS "" CACHE INTERNAL "Android specific c/c++ linker flags" )
                               
-set(CMAKE_CXX_FLAGS           "${ANDROID_CXX_FLAGS}" CACHE STRING "C++ flags")
-set(CMAKE_C_FLAGS             "${ANDROID_CXX_FLAGS}" CACHE STRING "C flags")
-set(CMAKE_CXX_FLAGS_RELEASE   "${ANDROID_CXX_FLAGS_RELEASE} -O3 -DNDEBUG" CACHE STRING "C++ Release flags")
-set(CMAKE_C_FLAGS_RELEASE     "${ANDROID_CXX_FLAGS_RELEASE} -O3 -DNDEBUG" CACHE STRING "C Release flags")
+set(CMAKE_CXX_FLAGS           "${ANDROID_CXX_FLAGS}"                               CACHE STRING "C++ flags")
+set(CMAKE_C_FLAGS             "${ANDROID_CXX_FLAGS}"                               CACHE STRING "C flags")
+set(CMAKE_CXX_FLAGS_RELEASE   "${ANDROID_CXX_FLAGS_RELEASE} -O3 -DNDEBUG"          CACHE STRING "C++ Release flags")
+set(CMAKE_C_FLAGS_RELEASE     "${ANDROID_CXX_FLAGS_RELEASE} -O3 -DNDEBUG"          CACHE STRING "C Release flags")
 set(CMAKE_CXX_FLAGS_DEBUG     "${ANDROID_CXX_FLAGS_DEBUG} -O0 -g -DDEBUG -D_DEBUG" CACHE STRING "C++ Debug flags")
 set(CMAKE_C_FLAGS_DEBUG       "${ANDROID_CXX_FLAGS_DEBUG} -O0 -g -DDEBUG -D_DEBUG" CACHE STRING "C Debug flags")
-set(CMAKE_SHARED_LINKER_FLAGS "${ANDROID_LINKER_FLAGS}" CACHE STRING "shared linker flags")
-set(CMAKE_MODULE_LINKER_FLAGS "${ANDROID_LINKER_FLAGS}" CACHE STRING "module linker flags")
-set(CMAKE_EXE_LINKER_FLAGS    "${ANDROID_LINKER_FLAGS} -Wl -z nocopyreloc" CACHE STRING "executable linker flags")
+set(CMAKE_SHARED_LINKER_FLAGS "${ANDROID_LINKER_FLAGS}"                            CACHE STRING "shared linker flags")
+set(CMAKE_MODULE_LINKER_FLAGS "${ANDROID_LINKER_FLAGS}"                            CACHE STRING "module linker flags")
+set(CMAKE_EXE_LINKER_FLAGS    "${ANDROID_LINKER_FLAGS} -Wl -z nocopyreloc"         CACHE STRING "executable linker flags")
 
 ########################################
 # global includes and link directories
