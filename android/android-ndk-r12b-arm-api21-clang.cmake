@@ -38,8 +38,8 @@ set(ANDROID_STL              "c++_shared"  CACHE STRING "Android C++ runtime lib
 
 ########################################
 # Install standalone Android toolchain
-set(ANDROID_STANDALONE_TOOLCHAIN_PATH "${CMAKE_BINARY_DIR}/android_toolchain-${ANDROID_NDK_VERSION}")
-if(NOT EXISTS ${ANDROID_STANDALONE_TOOLCHAIN_PATH})
+set(ANDROID_STANDALONE_TOOLCHAIN_PATH "${ANDROID_NDK_PATH}/android-toolchain-${ANDROID_NDK_VERSION}" CACHE PATH "Android standalone toolchain folder dir")
+if(NOT EXISTS "${ANDROID_STANDALONE_TOOLCHAIN_PATH}")
     set(TOOLCHAIN_ARGS "${ANDROID_NDK_PATH}/build/tools/make_standalone_toolchain.py" 
                        --api "${ANDROID_NATIVE_API_LEVEL}"
                        --stl "libc++" 
